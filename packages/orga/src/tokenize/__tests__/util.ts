@@ -35,19 +35,17 @@ import { ParseOptions } from '../../options'
 import * as tk from '../util';
 import { Position } from 'unist';
 
-export function testLexer(testName: string, input: string, expected: Token[], options: Partial<ParseOptions> = {}) {
+export const testLexer = (testName: string, input: string, expected: Token[], options: Partial<ParseOptions> = {}) =>
   it(testName, () => {
     expect(tok(input, options)).toMatchObject(expected);
   });
-}
 
-export function testLexerMulti(testName: string, tests: [input: string, expected: Token[]][], options: Partial<ParseOptions> = {}) {
+export const testLexerMulti = (testName: string, tests: [input: string, expected: Token[]][], options: Partial<ParseOptions> = {}) =>
   it(testName, () => {
     for (const [input, expected] of tests) {
       expect(tok(input, options)).toMatchObject(expected);
     }
   });
-}
 
 type Extra<Tok extends Token, Keys extends keyof Tok = 'type'> = Partial<Omit<Tok, Keys | 'type'>>;
 

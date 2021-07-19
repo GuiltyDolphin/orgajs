@@ -113,9 +113,10 @@ export default function lexActions(lexer: Lexer) {
 
 
 /** See {@link Lexer.eat}. */
-export function eat<K extends Token['type']>(): TokenParser<Token>;
-export function eat<K extends Token['type']>(type: K): TokenParser<Token & { type: K }>;
-export function eat<K extends Token['type']>(type?: K) {
+export const eat: {
+  <K extends Token['type']>(): TokenParser<Token>;
+  <K extends Token['type']>(type: K): TokenParser<Token & { type: K }>;
+} = <K extends Token['type']>(type?: K) => {
   return (lexer: Lexer) => {
     const { eat } = lexer;
     return type !== undefined ? eat(type) : eat();
@@ -139,11 +140,11 @@ export function hasValue(t: Token): t is Extract<Token, { value: unknown }> {
   return 'value' in t;
 }
 
-export function tokenValued<Ty extends Token['type']>(): TokenParser<Extract<Token, { value: unknown }>>;
-export function tokenValued<Ty extends Token['type']>(type: Ty): TokenParser<Extract<Token, { type: Ty, value: unknown }>>;
-export function tokenValued<Ty extends Token['type']>(type?: Ty) {
-  return matchingTy(type !== undefined ? eat(type) : eat(), hasValue);
-}
+export const tokenValued: {
+  <Ty extends Token['type']>(): TokenParser<Extract<Token, { value: unknown }>>;
+  <Ty extends Token['type']>(type: Ty): TokenParser<Extract<Token, { type: Ty, value: unknown }>>;
+} = <Ty extends Token['type']>(type?: Ty) =>
+    matchingTy(type !== undefined ? eat(type) : eat(), hasValue);
 
 export const map = <S, T>(f: (x: S) => T, x: TokenParser<S>): TokenParser<T> => {
   return (lexer: Lexer) => {
@@ -272,7 +273,7 @@ export const last = <T>(p: TokenParser<[...unknown[], T]>): TokenParser<T> => {
 /////////////////
 
 
-export function tokenToText(lexer: Lexer, t: Token): StyledText & { type: 'text.plain' } {
+export const tokenToText = (lexer: Lexer, t: Token): StyledText & { type: 'text.plain' } => {
   const { substring } = lexer;
   return {
     type: 'text.plain',

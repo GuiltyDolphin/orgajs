@@ -17,9 +17,8 @@ import {
 
 
 describe('footnote reference', () => {
-  function testParagraph(testName: string, inText: string, ...expected: Parameters<typeof paragraph>) {
-    return testParseSection(testName, inText, [paragraph(...expected)]);
-  }
+  const testParagraph = (testName: string, inText: string, ...expected: Parameters<typeof paragraph>) =>
+    testParseSection(testName, inText, [paragraph(...expected)]);
 
   testParagraph('with standard footnote',
     'hello[fn:named] world.', [

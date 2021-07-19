@@ -25,21 +25,17 @@ console.log(string)
     // debug(content)
   })
 
-  function testBlock(testName: string, toParse: string, ...expected: Parameters<typeof block>) {
-    return testParseSection(testName, toParse, [block(...expected)]);
-  }
+  const testBlock = (testName: string, toParse: string, ...expected: Parameters<typeof block>) =>
+    testParseSection(testName, toParse, [block(...expected)]);
 
-  function testGreaterBlock(testName: string, toParse: string, ...expected: Parameters<typeof greaterBlock>) {
-    return testParseSection(testName, toParse, [greaterBlock(...expected)]);
-  }
+  const testGreaterBlock = (testName: string, toParse: string, ...expected: Parameters<typeof greaterBlock>) =>
+    testParseSection(testName, toParse, [greaterBlock(...expected)]);
 
-  function testSpecialBlock(testName: string, toParse: string, ...expected: Parameters<typeof specialBlock>) {
-    return testParseSection(testName, toParse, [specialBlock(...expected)]);
-  }
+  const testSpecialBlock = (testName: string, toParse: string, ...expected: Parameters<typeof specialBlock>) =>
+    testParseSection(testName, toParse, [specialBlock(...expected)]);
 
-  function testVerseBlock(testName: string, toParse: string, ...expected: Parameters<typeof verseBlock>) {
-    return testParseSection(testName, `#+BEGIN_VERSE\n${toParse}\n#+END_VERSE`, [verseBlock(...expected)]);
-  }
+  const testVerseBlock = (testName: string, toParse: string, ...expected: Parameters<typeof verseBlock>) =>
+    testParseSection(testName, `#+BEGIN_VERSE\n${toParse}\n#+END_VERSE`, [verseBlock(...expected)]);
 
   describe('unclosed block is treated as text', () => {
     testParseSection('basic',

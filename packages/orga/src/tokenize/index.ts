@@ -190,9 +190,10 @@ export const tokenize = (text: string, options: Partial<ParseOptions> = {}): Lex
     }
   }
 
-  function _eat<K extends Token['type']>(): Token | undefined;
-  function _eat<K extends Token['type']>(type: K): Token & { type: K } | undefined;
-  function _eat<K extends Token['type']>(type?: K) {
+  const _eat: {
+    (): Token | undefined;
+    <K extends Token['type']>(type: K): Token & { type: K } | undefined;
+  } = <K extends Token['type']>(type?: K) => {
     const t = peek()
     if (!t) return undefined
     if (!type || type === t.type) {
@@ -200,7 +201,7 @@ export const tokenize = (text: string, options: Partial<ParseOptions> = {}): Lex
       return t
     }
     return undefined
-  }
+  };
 
   return {
     peek,
