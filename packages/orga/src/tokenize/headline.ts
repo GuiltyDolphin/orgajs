@@ -37,17 +37,17 @@ export default ({ reader, todoKeywordSets }: Props): Token[] => {
   let buffer: Token[] = []
 
   const stars = eat(/^\*+(?=\s)/)
-  if (isEmpty(stars.position)) throw Error('not gonna happen')
+  if (!stars) throw Error('not gonna happen');
   buffer.push(tokStars(stars.value.length, { position: stars.position }));
 
   eat('whitespaces')
   const keyword = eat(RegExp(`^${todos.map(escape).join('|')}`))
-  if (!isEmpty(keyword.position)) {
+  if (keyword) {
     buffer.push(tokTodo(keyword.value, isActionable(keyword.value), { position: keyword.position }));
   }
   eat('whitespaces')
   const priority = eat(/^\[#(.)\]/)
-  if (!isEmpty(priority.position)) {
+  if (priority) {
     const { value, ...rest } = priority;
     buffer.push(tokPriority(charAt(value, 2) as Char, rest));
   }

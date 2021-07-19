@@ -160,8 +160,8 @@ export const tokenize = (text: string, options: Partial<ParseOptions> = {}): Lex
     const table = tokenizeTable({ reader })
     if (table.length > 0) return table
 
-    const hr = eat(/^\s*-{5,}\s*$/).position
-    if (!isEmpty(hr)) {
+    const hr = eat(/^\s*-{5,}\s*$/)?.position;
+    if (hr) {
       return [tokHorizontalRule({ position: hr })];
     }
 

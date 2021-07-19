@@ -49,7 +49,7 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
   };
 
   const tokLink = (): Link | undefined => {
-    const m = match(/^\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/m)
+    const m = eat(/^\[\[([^\]]*)\](?:\[([^\]]*)\])?\]/m)
     if (!m) return undefined
     const linkInfo = uri(m.captures[1])
     if (linkInfo) {
@@ -61,30 +61,27 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
   const tokFootnoteAnonOrInline = (): Token[] => {
     const tokens: Token[] = [];
 
-    let m = match(/^\[fn:(\w*):/);
+    let m = eat(/^\[fn:(\w*):/);
     if (!m) return [];
     tokens.push(tk.tokFootnoteInlineBegin(m.captures[1], { position: m.position }));
-    jump(m.position.end);
 
-    m = match(/^\]/);
-    if (m) {
+    let end = match(/^\]/);
+    if (end) {
       // empty body
-      tokens.push(tk.tokText('', { position: { start: m.position.start, end: m.position.start, indent: m.position.indent } }));
+      tokens.push(tk.tokText('', { position: { start: end.position.start, end: end.position.start, indent: end.position.indent } }));
     } else {
       tokens.push(...tokenize({ reader }, { ignoring: [']'] }));
     }
 
-    m = match(/^\]/);
-    if (!m) return [];
-    tokens.push(tk.tokFootnoteReferenceEnd({ position: m.position }));
-
-    jump(tokens[0].position.start);
+    end = eat(/^\]/);
+    if (!end) return [];
+    tokens.push(tk.tokFootnoteReferenceEnd({ position: end.position }));
 
     return tokens;
   }
 
   const tokFootnote = (): FootnoteReference | undefined => {
-    const m = match(/^\[fn:(\w+)\]/);
+    const m = eat(/^\[fn:(\w+)\]/);
     if (m) {
       return tk.tokFootnoteReference(m.captures[1], { position: m.position });
     }
@@ -100,6 +97,7 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
       return [];
     }
     if (marker === '~' || marker === '=') {
+      eat(m.position.end);
       return [{
         type: MARKERS[marker],
         value,
@@ -107,24 +105,29 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
       }];
     } else if (marker === '*' || marker === '/' || marker === '+' || marker === '_') {
       const tokens: Token[] = [];
-      const markerStart = match(new RegExp(`^${escape(marker)}`), searchRegion)!;
+      const markerStart = eat('char');
       tokens.push({ type: 'token.complexStyleChar', char: marker, position: markerStart.position });
-      const innerToks = tokenize({ reader, start: markerStart.position.end, end: shift(m.position.end, -1) });
+      const innerToks = tokenize({ reader, end: shift(m.position.end, -1) });
       tokens.push(...innerToks);
       const markerEnd = eat('char');
       tokens.push({ type: 'token.complexStyleChar', char: marker, position: markerEnd.position });
-      jump(searchRegion.start);
       return tokens;
     }
     return [];
   }
 
   const tryToTokens = (tok: () => Token[]) => {
+    const save = { ...now() };
     const tokens = tok()
-    if (tokens.length === 0) return false
-    cleanup()
+    if (tokens.length === 0) {
+      jump(save);
+      return false;
+    }
+    // now we treat anything between the end of the last successful
+    // token(s) (or the start) and the beginning of the current tokens
+    // as text
+    cleanup(tokens[0].position.start);
     _tokens.push(...tokens)
-    jump(tokens[tokens.length - 1].position.end)
     cursor = { ...now() }
     return true
   }
@@ -136,20 +139,17 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
     });
   }
 
-  const cleanup = () => {
-    if (isGreaterOrEqual(cursor, now())) return
-    const position = { start: { ...cursor }, end: { ...now() } }
+  const cleanup = (toWhere: Point) => {
+    if (isGreaterOrEqual(cursor, toWhere)) return
+    const position = { start: { ...cursor }, end: { ...toWhere } }
     const value = substring(position)
     _tokens.push(tk.tokText(value, { position: position }));
   }
 
   const tokNewline = (): Newline | undefined => {
-    const save = { ...now() };
-    const newline = eat('char');
-    jump(save);
-    if (newline.value === '\n') {
-      return tk.tokNewline({ position: newline.position });
-    }
+    const newline = eat(/^\n/, { start: now(), end: shift(now(), 1) });
+    if (!newline) return;
+    return tk.tokNewline({ position: newline.position });
   }
 
   while (!isGreaterOrEqual(now(), end)) {
@@ -178,7 +178,7 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
     eat()
   }
 
-  cleanup()
+  cleanup(now())
   return _tokens
 
 }

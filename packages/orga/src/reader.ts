@@ -25,10 +25,10 @@ export const read = (text: string) => {
 
   const now = () => cursor
 
-  const eat = (param: 'char' | 'line' | 'whitespaces' | RegExp | number = 'char'): {
-    value: string;
-    position: Position;
-  } => {
+  const eat: {
+    (param: RegExp, bound?: Position): { value: string; position: Position; captures: string[] } | undefined;
+    (param?: 'char' | 'line' | 'whitespaces' | number | Point): { value: string; position: Position };
+  } = ((param: 'char' | 'line' | 'whitespaces' | RegExp | number | Point = 'char', bound: Position = { start: now(), end: eol() }) => {
     const start = now()
     if (param === 'char') {
       cursor = shift(start, 1)
@@ -36,13 +36,29 @@ export const read = (text: string) => {
       const lp = linePosition(cursor.line)!
       cursor = lp.end
     } else if (param === 'whitespaces') {
-      return eat(/^[ \t]+/)
+      const spaces = eat(/^[ \t]+/);
+      if (spaces) {
+        cursor = spaces.position.end;
+      }
     } else if (typeof param === 'number') {
       cursor = shift(start, param)
-    } else {
-      const m = match(param, { start: cursor, end: eol() });
+    } else if (param instanceof RegExp) {
+      const m = match(param, bound);
+      if (!m) return;
       if (m) {
         cursor = m.position.end;
+        return {
+          value: m.captures[0],
+          captures: m.captures,
+          position: {
+            start,
+            end: cursor,
+          },
+        };
+      }
+    } else {
+      if (isGreaterOrEqual(param, now())) {
+        cursor = param;
       }
     }
 
@@ -55,7 +71,10 @@ export const read = (text: string) => {
       value: substring(position),
       position,
     }
-  }
+  }) as {
+    (param: RegExp, bound?: Position): { value: string; position: Position; captures: string[] } | undefined;
+    (param?: 'char' | 'line' | 'whitespaces' | number | Point): { value: string; position: Position };
+  };
 
   const eol = ((offset: number = 0) => _eol(cursor.line + offset)) as {
     (): Point; // always an end to the current line
@@ -94,7 +113,10 @@ export interface Reader {
   eol(): Point;
   eol(offset: number): Point | undefined;
   EOF: () => boolean;
-  eat: (param?: 'char' | 'line' | 'whitespaces' | number | RegExp) => { value: string, position: Position };
+  eat: {
+    (param: RegExp, bounds?: Position): { value: string, position: Position, captures: string[] } | undefined;
+    (param?: 'char' | 'line' | 'whitespaces' | number | Point): { value: string, position: Position };
+  }
   jump: (point: Point) => void;
   distance: (position: Position) => number;
   match: (pattern: RegExp, position?: Position) => {

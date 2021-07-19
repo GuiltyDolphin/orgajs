@@ -7,36 +7,36 @@ export const parse = (
   { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone } = {},
 ): Timestamp | undefined => {
 
-  const { match, eat, getChar, jump } = read(input)
+  const { eat, getChar } = read(input)
 
   eat('whitespaces')
   const timestamp = () => {
 
     // opening
-    const { value: opening } = eat(/[<[]/g)
-    if (opening.length === 0) return
+    const opening = eat(/[<[]/g)?.value;
+    if (!opening) return;
     const active = opening === '<'
 
     // date
-    const { value: _date } = eat(/\d{4}-\d{2}-\d{2}/)
-    let date = _date
+    const _date = eat(/^\d{4}-\d{2}-\d{2}/);
+    if (!_date) return;
+    let date = _date.value;
 
     eat('whitespaces')
 
     let end: string | undefined
 
     // day
-    const { value: _day } = eat(/[a-zA-Z]+/)
+    const _day = eat(/^[a-zA-Z]+/);
     eat('whitespaces')
 
     // time
-    const time = match(/(\d{2}:\d{2})(?:-(\d{2}:\d{2}))?/)
+    const time = eat(/^(\d{2}:\d{2})(?:-(\d{2}:\d{2}))?/)
     if (time) {
-      date = `${_date} ${time.captures[1]}`
+      date = `${_date.value} ${time.captures[1]}`
       if (time.captures[2]) {
-        end = `${_date} ${time.captures[2]}`
+        end = `${_date.value} ${time.captures[2]}`
       }
-      jump(time.position.end)
     }
 
     // closing
@@ -60,7 +60,7 @@ export const parse = (
   if (!ts) return
 
   if (!ts.end) {
-    const { value: doubleDash } = eat(/--/)
+    const doubleDash = eat(/--/)?.value ?? '';
     if (doubleDash.length > 0) {
       const end = timestamp()
       if (end) {
