@@ -151,37 +151,33 @@ export const tokenize = (props: Props, { ignoring }: { ignoring: string[] } = { 
       return tk.tokNewline({ position: newline.position });
     }
   }
-  const tok = (): Token[] | undefined => {
-    if (isGreaterOrEqual(now(), end)) {
-      return
-    }
+
+  while (!isGreaterOrEqual(now(), end)) {
     const char = getChar()
-    if (!char) return;
+    if (!char) break;
 
     if (ignoring.includes(char)) {
-      return [];
+      break;
     }
 
     if (char === '[') {
-      if (tryTo(tokLink)) return tok()
-      if (tryTo(tokFootnote)) return tok()
-      if (tryToTokens(tokFootnoteAnonOrInline)) return tok();
+      if (tryTo(tokLink)) continue;
+      if (tryTo(tokFootnote)) continue;
+      if (tryToTokens(tokFootnoteAnonOrInline)) continue;
     }
 
     if (char in MARKERS) {
       const pre = getChar(-1)
       if (now().column === 1 || (pre && /[\s({'"_*+\/]/.test(pre))) {
-        if (tryToTokens(tokStyledText(char))) return tok()
+        if (tryToTokens(tokStyledText(char))) continue;
       }
     }
 
-    if (tryTo(tokNewline)) return tok()
+    if (tryTo(tokNewline)) continue;
 
     eat()
-    tok()
   }
 
-  tok()
   cleanup()
   return _tokens
 
