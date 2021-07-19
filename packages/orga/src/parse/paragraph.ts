@@ -21,30 +21,33 @@ export default function paragraph(lexer: Lexer, opts?: Partial<{ breakOn: (t: To
   const createParagraph = (start: Position): Paragraph => ast.paragraph([], { position: start });
 
   const build = (p?: Paragraph): Paragraph | undefined => {
-    const token = peek()
-    if (!token || eolCount >= maxEOL) {
-      return p
-    }
-    if (breakOn(token)) {
-      return p;
-    }
+    while (true) {
+      const token = peek()
+      if (!token || eolCount >= maxEOL) {
+        break;
+      }
+      if (breakOn(token)) {
+        break;
+      }
 
-    if (token.type === 'newline') {
-      eat()
-      eolCount += 1
-      p = p ?? createParagraph(token.position)
-      push(p)(ast.text(' ', { position: token.position }));
-      return build(p)
-    }
+      if (token.type === 'newline') {
+        eat()
+        eolCount += 1
+        p = p ?? createParagraph(token.position)
+        push(p)(ast.text(' ', { position: token.position }));
+        continue;
+      }
 
-    if (tryTo(phrasingContent)(phras => {
-      p = p ?? createParagraph(phras.position)
-      push(p)(phras)
-      eolCount = 0
-    })) {
-      return build(p);
+      if (tryTo(phrasingContent)(phras => {
+        p = p ?? createParagraph(phras.position)
+        push(p)(phras)
+        eolCount = 0
+      })) {
+        continue;
+      }
+      break;
     }
-    return p
+    return p;
   }
 
   const p = build()
